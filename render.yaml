@@ -1,0 +1,22 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+#
+# Push this file alongside the Dockerfile and Render reads it from the
+# repository to provision the service. One web service, Docker runtime,
+# free plan, EU region, healthcheck on /health.
+
+services:
+  - type: web
+    name: churn-prediction
+    runtime: docker
+    region: frankfurt           # closest free region for an FR-based author
+    plan: free                  # 512 MB RAM, sleeps after 15 min idle
+    branch: main
+    rootDir: .
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true            # redeploy on every push to main
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: LOG_LEVEL
+        value: info

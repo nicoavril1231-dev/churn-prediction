@@ -150,6 +150,20 @@ churn-prediction/
 
 ---
 
+## Deploy
+
+A [`render.yaml`](render.yaml) Blueprint is included so the service can be
+deployed in three clicks:
+
+1. Sign in at [render.com](https://render.com) with GitHub.
+2. **New** → **Blueprint** → select `nicoavril1231-dev/churn-prediction`.
+3. **Apply** — Render reads the yaml, builds the Docker image, runs the
+   healthcheck on `/health`, and exposes the service at
+   `https://churn-prediction-<id>.onrender.com`.
+
+The free plan sleeps after 15 minutes of inactivity (cold start ~30s on
+first hit). For always-on serving, switch the `plan` field to `starter`.
+
 ## Roadmap
 
 - [ ] Calibration: ship `CalibratedClassifierCV` instead of raw logreg
