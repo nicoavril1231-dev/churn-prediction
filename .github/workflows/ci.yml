@@ -20,7 +20,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v8
+        # Pin to a full version tag — astral-sh/setup-uv does not maintain a
+        # `v8` major-version alias (only v7 and below have it). Using `@v8`
+        # makes the runner fail "Set up job" with a 404.
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: true
           python-version: "3.11"
