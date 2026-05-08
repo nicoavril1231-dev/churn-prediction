@@ -1,8 +1,12 @@
-"""Training pipeline with MLflow tracking.
+"""Training pipeline with optional MLflow tracking.
 
 Trains 3 candidates (Logistic Regression baseline, XGBoost, LightGBM),
-logs metrics + artifacts to MLflow, and persists the best model to
-`models/best_model.joblib`.
+optionally logs metrics + artifacts to MLflow, and persists the best
+model to `models/best_model.joblib`.
+
+MLflow is a *dev-only* dependency (heavy proto stack). When mlflow isn't
+installed (e.g. in the production Docker image), training still runs and
+the artifact is saved — only the experiment-tracking step is skipped.
 
 Run:
     python -m churn.train               # train all
@@ -12,14 +16,22 @@ Run:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
 from typing import Any
 
 import joblib
-import mlflow
-import mlflow.sklearn
 import numpy as np
 import pandas as pd
+
+# mlflow is optional: dev tooling only, not in the runtime image.
+try:
+    import mlflow
+    import mlflow.sklearn
+    MLFLOW_AVAILABLE = True
+except ImportError:  # pragma: no cover — exercised only in slim images
+    mlflow = None  # type: ignore[assignment]
+    MLFLOW_AVAILABLE = False
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
@@ -107,7 +119,7 @@ def train_and_log(
     X_test: pd.DataFrame,
     y_test: pd.Series,
 ) -> tuple[Pipeline, dict[str, float]]:
-    """Fit pipeline, evaluate on test, log to MLflow, return the pipeline + metrics."""
+    """Fit pipeline, evaluate on test, optionally log to MLflow, return the pipeline + metrics."""
     pipeline = Pipeline(
         [
             ("preprocess", build_preprocessor()),
@@ -115,7 +127,15 @@ def train_and_log(
         ]
     )
 
-    with mlflow.start_run(run_name=name):
+    # mlflow.start_run is a context manager when available; otherwise we use a
+    # nullcontext so the rest of the body runs identically with or without it.
+    run_ctx = (
+        mlflow.start_run(run_name=name)
+        if MLFLOW_AVAILABLE
+        else contextlib.nullcontext()
+    )
+
+    with run_ctx:
         cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
         cv_auc = cross_val_score(pipeline, X_train, y_train, cv=cv, scoring="roc_auc", n_jobs=-1)
 
@@ -127,9 +147,10 @@ def train_and_log(
         metrics["cv_roc_auc_mean"] = float(cv_auc.mean())
         metrics["cv_roc_auc_std"] = float(cv_auc.std())
 
-        mlflow.log_params({"model": name, **estimator.get_params(deep=False)})
-        mlflow.log_metrics(metrics)
-        mlflow.sklearn.log_model(pipeline, "pipeline")
+        if MLFLOW_AVAILABLE:
+            mlflow.log_params({"model": name, **estimator.get_params(deep=False)})
+            mlflow.log_metrics(metrics)
+            mlflow.sklearn.log_model(pipeline, "pipeline")
 
         logger.info(
             "%-7s — ROC-AUC: %.4f | F1: %.4f | Recall: %.4f | CV-AUC: %.4f ± %.4f",
@@ -156,8 +177,11 @@ def main() -> None:
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-    mlflow.set_experiment(MLFLOW_EXPERIMENT)
+    if MLFLOW_AVAILABLE:
+        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+        mlflow.set_experiment(MLFLOW_EXPERIMENT)
+    else:
+        logger.info("mlflow not installed — training will run without experiment tracking.")
 
     df = load_processed()
     X = df[ALL_FEATURES]
