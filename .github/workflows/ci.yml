@@ -23,13 +23,16 @@ jobs:
         # Pin to a full version tag — astral-sh/setup-uv does not maintain a
         # `v8` major-version alias (only v7 and below have it). Using `@v8`
         # makes the runner fail "Set up job" with a 404.
+        # `activate-environment: true` creates and activates a .venv so
+        # subsequent `python` / `pytest` / `ruff` commands resolve in PATH.
         uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: true
           python-version: "3.11"
+          activate-environment: true
 
       - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
+        run: uv pip install -e ".[dev]"
 
       - name: Lint with ruff
         run: ruff check src tests api
