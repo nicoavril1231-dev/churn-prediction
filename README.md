@@ -1,6 +1,6 @@
 # Churn Prediction — End-to-End ML Pipeline
 
-[![CI](https://github.com/nicolasavril/churn-prediction/actions/workflows/ci.yml/badge.svg)](https://github.com/nicolasavril/churn-prediction/actions/workflows/ci.yml)
+[![CI](https://github.com/nicoavril1231-dev/churn-prediction/actions/workflows/ci.yml/badge.svg)](https://github.com/nicoavril1231-dev/churn-prediction/actions/workflows/ci.yml)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -61,7 +61,7 @@ slightly here. Discussion in [`notebooks/02-modeling.ipynb`](notebooks/02-modeli
 
 ```bash
 # 1. Setup (requires Python 3.11 and uv)
-git clone https://github.com/nicolasavril/churn-prediction.git
+git clone https://github.com/nicoavril1231-dev/churn-prediction.git
 cd churn-prediction
 uv venv && uv pip install -e ".[dev]"
 
