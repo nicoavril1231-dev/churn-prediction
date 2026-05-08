@@ -13,6 +13,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     UV_LINK_MODE=copy
 
+# libgomp1 is GCC's OpenMP runtime — required by LightGBM and XGBoost.
+# Without it: `OSError: libgomp.so.1: cannot open shared object file`.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install uv (fast Python package manager)
 COPY --from=ghcr.io/astral-sh/uv:0.4 /uv /usr/local/bin/uv
 
@@ -42,6 +48,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH" \
     PORT=8000
+
+# libgomp1 is also needed at runtime — sklearn uses it for parallelism and
+# any future LightGBM/XGBoost predictions would crash without it.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
